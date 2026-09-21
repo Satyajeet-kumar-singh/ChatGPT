@@ -1,0 +1,37 @@
+[project]
+name = "chatgpt"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "satyajeet-kumar-singh", email = "satyavrajput9898@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "chromadb>=1.5.9",
+    "docx2txt>=0.9",
+    "fastapi>=0.141.1",
+    "jinja2>=3.1.6",
+    "langchain>=1.4.0",
+    "langchain-chroma>=1.1.0",
+    "langchain-core>=1.6.3",
+    "langchain-google-genai>=4.4.0",
+    "langchain-groq>=1.1.3",
+    "langchain-tavily>=0.2.18",
+    "langchain-text-splitters>=1.1.2",
+    "langgraph>=1.2.11",
+    "langgraph-checkpoint-sqlite>=3.1.1",
+    "pypdf>=6.18.1",
+    "python-dotenv>=1.2.3",
+    "python-multipart>=0.0.32",
+    "sqlalchemy>=2.0.53",
+    "tavily-python>=0.8.3",
+    "uvicorn>=0.53.0",
+]
+
+[project.scripts]
+chatgpt = "chatgpt:main"
+
+[build-system]
+requires = ["uv_build>=0.12.4,<0.13.0"]
+build-backend = "uv_build"
