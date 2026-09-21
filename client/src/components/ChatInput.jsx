@@ -3,7 +3,7 @@ import {
   Mic,
   Send,
 } from "lucide-react";
-import { models } from "../data/chatdata";
+import { models } from "../data/chatdata"
 
 function ChatInput({
   message,
