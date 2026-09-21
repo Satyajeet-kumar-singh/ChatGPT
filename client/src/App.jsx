@@ -600,85 +600,29 @@ function toggleDictation() {
 
     recognition.lang = "en-US";
 
-    // Continuous speaking
-    recognition.continuous = true;
-
-    // We handle interim + final separately
-    recognition.interimResults = true;
-
+    // Important for mobile duplicate issue
+    recognition.continuous = false;
+    recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
-    // Track speech results
-    let finalTranscript = "";
-    let lastResultIndex = 0;
-
     recognition.onstart = () => {
-      finalTranscript = "";
-      lastResultIndex = 0;
-
       setIsRecording(true);
       setStatus("Listening...");
     };
 
     recognition.onresult = (event) => {
-      let newFinalText = "";
-      let currentInterimText = "";
+      const transcript =
+        event.results[0]?.[0]?.transcript?.trim();
 
-      for (
-        let i = event.resultIndex;
-        i < event.results.length;
-        i++
-      ) {
-        const transcript =
-          event.results[i][0].transcript;
-
-        if (event.results[i].isFinal) {
-          newFinalText += transcript;
-        } else {
-          currentInterimText += transcript;
-        }
-      }
-
-      // Add ONLY newly finalized text
-      if (newFinalText.trim()) {
-        finalTranscript +=
-          newFinalText.trim() + " ";
-      }
-
-      // Build current speech
-      const speechText = (
-        finalTranscript +
-        currentInterimText
-      ).trim();
+      if (!transcript) return;
 
       setMessage((prev) => {
-        /*
-          Remove the previous speech portion
-          before adding the latest recognition result.
-
-          This prevents:
-          "what is what is what is LangGraph"
-        */
-        const previousSpeech =
-          prev;
-
-        // If there is no speech yet
-        if (!speechText) {
-          return previousSpeech;
+        if (!prev.trim()) {
+          return transcript;
         }
 
-        /*
-          Keep existing typed text separate.
-          Speech recognition replaces its own
-          current result instead of repeatedly
-          appending it.
-        */
-
-        return speechText;
+        return `${prev.trim()} ${transcript}`;
       });
-
-      lastResultIndex =
-        event.results.length;
     };
 
     recognition.onerror = (event) => {
@@ -687,21 +631,13 @@ function toggleDictation() {
         event.error
       );
 
-      if (
-        event.error === "not-allowed" ||
-        event.error === "service-not-allowed"
-      ) {
-        setIsRecording(false);
-        setStatus("Ready");
-      }
+      setIsRecording(false);
+      setStatus("Ready");
     };
 
     recognition.onend = () => {
       setIsRecording(false);
       setStatus("Ready");
-
-      finalTranscript = "";
-      lastResultIndex = 0;
     };
 
     recognitionRef.current =
@@ -710,15 +646,16 @@ function toggleDictation() {
 
   if (isRecording) {
     stopDictation();
-  } else {
-    try {
-      recognitionRef.current.start();
-    } catch (error) {
-      console.error(
-        "Recognition start error:",
-        error
-      );
-    }
+    return;
+  }
+
+  try {
+    recognitionRef.current.start();
+  } catch (error) {
+    console.error(
+      "Recognition start error:",
+      error
+    );
   }
 }
 
