@@ -1,6 +1,6 @@
 import React from 'react'
 import { Bot } from "lucide-react";
-import { suggestions } from "../data/chatData";
+import { suggestions } from "../data/chatdata";
 import SuggestionCard from './SuggestionCard';
 
 function WelcomeScreen({onPrompt}) {
