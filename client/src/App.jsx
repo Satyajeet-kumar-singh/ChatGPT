@@ -578,94 +578,158 @@ function detectTool(text) {
       Speech Recognition
   ----------------------------- */
 
-  function toggleDictation() {
-    if (!recognitionRef.current) {
-      const SpeechRecognition =
-        window.SpeechRecognition ||
-        window.webkitSpeechRecognition;
+  /* -----------------------------
+    Speech Recognition
+----------------------------- */
 
-      if (!SpeechRecognition) {
-        alert(
-          "Speech recognition is not supported. Please use Chrome or Edge."
-        );
-        return;
+function toggleDictation() {
+  if (!recognitionRef.current) {
+    const SpeechRecognition =
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert(
+        "Speech recognition is not supported. Please use Chrome or Edge."
+      );
+      return;
+    }
+
+    const recognition =
+      new SpeechRecognition();
+
+    recognition.lang = "en-US";
+
+    // Continuous speaking
+    recognition.continuous = true;
+
+    // We handle interim + final separately
+    recognition.interimResults = true;
+
+    recognition.maxAlternatives = 1;
+
+    // Track speech results
+    let finalTranscript = "";
+    let lastResultIndex = 0;
+
+    recognition.onstart = () => {
+      finalTranscript = "";
+      lastResultIndex = 0;
+
+      setIsRecording(true);
+      setStatus("Listening...");
+    };
+
+    recognition.onresult = (event) => {
+      let newFinalText = "";
+      let currentInterimText = "";
+
+      for (
+        let i = event.resultIndex;
+        i < event.results.length;
+        i++
+      ) {
+        const transcript =
+          event.results[i][0].transcript;
+
+        if (event.results[i].isFinal) {
+          newFinalText += transcript;
+        } else {
+          currentInterimText += transcript;
+        }
       }
 
-      const recognition =
-        new SpeechRecognition();
+      // Add ONLY newly finalized text
+      if (newFinalText.trim()) {
+        finalTranscript +=
+          newFinalText.trim() + " ";
+      }
 
-      recognition.lang = "en-US";
-      recognition.continuous = true;
-      recognition.interimResults = true;
+      // Build current speech
+      const speechText = (
+        finalTranscript +
+        currentInterimText
+      ).trim();
 
-      recognition.onstart = () => {
-        setIsRecording(true);
-        setStatus("Listening...");
-      };
+      setMessage((prev) => {
+        /*
+          Remove the previous speech portion
+          before adding the latest recognition result.
 
-      recognition.onresult = (
-        event
-      ) => {
-        let finalText = "";
+          This prevents:
+          "what is what is what is LangGraph"
+        */
+        const previousSpeech =
+          prev;
 
-        for (
-          let i = event.resultIndex;
-          i < event.results.length;
-          i++
-        ) {
-          if (
-            event.results[i].isFinal
-          ) {
-            finalText +=
-              event.results[i][0]
-                .transcript + " ";
-          }
+        // If there is no speech yet
+        if (!speechText) {
+          return previousSpeech;
         }
 
-        if (finalText) {
-          setMessage((prev) =>
-            prev
-              ? prev +
-                " " +
-                finalText.trim()
-              : finalText.trim()
-          );
-        }
-      };
+        /*
+          Keep existing typed text separate.
+          Speech recognition replaces its own
+          current result instead of repeatedly
+          appending it.
+        */
 
-      recognition.onerror = (event) => {
-        console.error(
-          "Speech error:",
-          event.error
-        );
+        return speechText;
+      });
 
-        stopDictation();
-      };
+      lastResultIndex =
+        event.results.length;
+    };
 
-      recognition.onend = () => {
+    recognition.onerror = (event) => {
+      console.error(
+        "Speech recognition error:",
+        event.error
+      );
+
+      if (
+        event.error === "not-allowed" ||
+        event.error === "service-not-allowed"
+      ) {
         setIsRecording(false);
         setStatus("Ready");
-      };
+      }
+    };
 
-      recognitionRef.current =
-        recognition;
-    }
+    recognition.onend = () => {
+      setIsRecording(false);
+      setStatus("Ready");
 
-    if (isRecording) {
-      stopDictation();
-    } else {
-      recognitionRef.current.start();
-    }
+      finalTranscript = "";
+      lastResultIndex = 0;
+    };
+
+    recognitionRef.current =
+      recognition;
   }
 
-  function stopDictation() {
+  if (isRecording) {
+    stopDictation();
+  } else {
     try {
-      recognitionRef.current?.stop();
-    } catch {}
-
-    setIsRecording(false);
-    setStatus("Ready");
+      recognitionRef.current.start();
+    } catch (error) {
+      console.error(
+        "Recognition start error:",
+        error
+      );
+    }
   }
+}
+
+function stopDictation() {
+  try {
+    recognitionRef.current?.stop();
+  } catch {}
+
+  setIsRecording(false);
+  setStatus("Ready");
+}
 
   /* -----------------------------
       Keyboard
